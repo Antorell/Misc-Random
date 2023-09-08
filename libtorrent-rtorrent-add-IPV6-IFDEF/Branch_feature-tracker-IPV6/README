@@ -1,0 +1,13 @@
+/!\ Untested /!\ #ifdef macros to completely disable IPV6
+Untested yet. reintroduce the #ifdef macros to completely disable IPV6 in rtorrent/libtorrent 1.38,
+files and patch created using rtorrent/libtorrent master/main branch and feature/tracker-IPV6 branch. 
+
+Fixes IPV6 peers/seeds that try to connect and show up in the list of seed/peers even when bind_address is set to lisetn to an IPV4 address.
+On a dual stack machine rtorrent will bind the listening socket using an IPV6 socket with an IPV4 mapped to IPV6 address and still accept IPV6 peers/seeds,
+when it should be using an IPV4 socket to ignore/disallow anything IPV6. IPV4 isn't going anywhere anytime soon, and by the time rtorrent will really 
+need an IPV4 mapped to IPV6 to bind to an IPV4 addess, rtorrent will surely be long gone. 
+
+https://datatracker.ietf.org/doc/html/rfc4038#section-8
+
+
+

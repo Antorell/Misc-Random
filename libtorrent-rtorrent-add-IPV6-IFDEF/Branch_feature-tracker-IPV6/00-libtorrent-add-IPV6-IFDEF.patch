@@ -1,0 +1,846 @@
+ configure.ac                      |  1 +
+ rak/socket_address.h              | 63 ++++++++++++++++++++++++++++++++++-----
+ src/dht/dht_node.cc               | 22 ++++++++------
+ src/dht/dht_server.cc             |  6 ++--
+ src/net/address_list.cc           |  2 ++
+ src/net/address_list.h            |  4 +++
+ src/net/listen.cc                 |  2 ++
+ src/net/socket_datagram.cc        |  8 +++--
+ src/net/socket_fd.cc              | 35 +++++++++++++++++-----
+ src/net/socket_fd.h               |  6 ++--
+ src/torrent/connection_manager.cc | 17 ++++++++---
+ src/torrent/event.h               |  8 +++--
+ src/torrent/peer/peer_list.cc     | 10 +++++--
+ src/tracker/tracker_http.cc       | 18 +++++++++--
+ src/tracker/tracker_udp.cc        |  8 +++--
+ 15 files changed, 165 insertions(+), 45 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index e9f3b816..a4f8490a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -95,6 +95,7 @@ TORRENT_CHECK_POPCOUNT
+ TORRENT_DISABLE_PTHREAD_SETNAME_NP
+ TORRENT_MINCORE
+ 
++TORRENT_DISABLE_IPV6
+ TORRENT_DISABLE_INSTRUMENTATION
+ 
+ LIBTORRENT_LIBS="-ltorrent"
+diff --git a/rak/socket_address.h b/rak/socket_address.h
+index 8eb60116..cfa5e8f7 100644
+--- a/rak/socket_address.h
++++ b/rak/socket_address.h
+@@ -61,14 +61,17 @@
+ namespace rak {
+ 
+ class socket_address_inet;
++#ifndef RAK_USE_INET6
+ class socket_address_inet6;
+-
++#endif
+ class socket_address {
+ public:
+   static const sa_family_t af_inet   = AF_INET;
+   static const int         pf_inet   = PF_INET;
++#ifndef RAK_USE_INET6
+   static const sa_family_t af_inet6  = AF_INET6;
+   static const int         pf_inet6  = PF_INET6;
++#endif
+   static const sa_family_t af_unspec = AF_UNSPEC;
+   static const int         pf_unspec = PF_UNSPEC;
+ 
+@@ -84,9 +87,11 @@ public:
+   bool                is_valid() const;
+   bool                is_bindable() const;
+   bool                is_address_any() const;
+-
+-  bool                is_valid_inet_class() const             { return family() == af_inet || family() == af_inet6; }
+-
++  bool                is_valid_inet_class() const             { return family() == af_inet
++#ifdef RAK_USE_INET6
++  || family() == af_inet6
++ #endif
++ ; }
+   void                clear()                                 { std::memset(this, 0, sizeof(socket_address)); set_family(); }
+ 
+   sa_family_t         family() const                          { return m_sockaddr.sa_family; }
+@@ -116,11 +121,13 @@ public:
+   const sockaddr*     c_sockaddr() const                      { return &m_sockaddr; }
+   const sockaddr_in*  c_sockaddr_inet() const                 { return &m_sockaddrInet; }
+ 
++#ifdef RAK_USE_INET6
+   socket_address_inet6*       sa_inet6()                      { return reinterpret_cast<socket_address_inet6*>(this); }
+   const socket_address_inet6* sa_inet6() const                { return reinterpret_cast<const socket_address_inet6*>(this); }
+ 
+   sockaddr_in6*       c_sockaddr_inet6()                      { return &m_sockaddrInet6; }
+   const sockaddr_in6* c_sockaddr_inet6() const                { return &m_sockaddrInet6; }
++#endif
+ 
+   // Copy a socket address which has the length 'length. Zero out any
+   // extranous bytes and ensure it does not go beyond the size of this
+@@ -145,7 +152,9 @@ private:
+   union {
+     sockaddr            m_sockaddr;
+     sockaddr_in         m_sockaddrInet;
++#ifdef RAK_USE_INET6
+     sockaddr_in6        m_sockaddrInet6;
++#endif
+   };
+ };
+ 
+@@ -189,7 +198,9 @@ public:
+   const sockaddr*     c_sockaddr() const                      { return reinterpret_cast<const sockaddr*>(&m_sockaddr); }
+   const sockaddr_in*  c_sockaddr_inet() const                 { return &m_sockaddr; }
+   
++#ifdef RAK_USE_INET6
+   socket_address_inet6 to_mapped_address() const;
++#endif
+ 
+   bool                operator == (const socket_address_inet& rhs) const;
+   bool                operator < (const socket_address_inet& rhs) const;
+@@ -198,6 +209,9 @@ private:
+   struct sockaddr_in  m_sockaddr;
+ };
+ 
++#ifdef RAK_USE_INET6
++// Remember to set the AF_INET6.
++
+ class socket_address_inet6 {
+ public:
+   bool                is_any() const                          { return is_port_any() && is_address_any(); }
+@@ -242,14 +256,17 @@ public:
+ private:
+   struct sockaddr_in6 m_sockaddr;
+ };
++#endif
+ 
+ inline bool
+ socket_address::is_any() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->is_any();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->is_any();
++#endif
+   default:
+     return false;
+   }
+@@ -260,8 +277,10 @@ socket_address::is_valid() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->is_valid();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->is_valid();
++#endif
+   default:
+     return false;
+   }
+@@ -272,8 +291,10 @@ socket_address::is_bindable() const {
+   switch (family()) {
+   case af_inet:
+     return !sa_inet()->is_address_any();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return !sa_inet6()->is_address_any();
++#endif
+   default:
+     return false;
+   }
+@@ -284,8 +305,10 @@ socket_address::is_address_any() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->is_address_any();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->is_address_any();
++#endif
+   default:
+     return true;
+   }
+@@ -296,8 +319,10 @@ socket_address::port() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->port();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->port();
++#endif
+   default:
+     return 0;
+   }
+@@ -308,8 +333,10 @@ socket_address::set_port(uint16_t p) {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->set_port(p);
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->set_port(p);
++#endif
+   default:
+     break;
+   }
+@@ -320,8 +347,10 @@ socket_address::address_str() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->address_str();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->address_str();
++#endif
+   default:
+     return std::string();
+   }
+@@ -332,8 +361,10 @@ socket_address::address_c_str(char* buf, socklen_t size) const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->address_c_str(buf, size);
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->address_c_str(buf, size);
++#endif
+   default:
+     return false;
+   }
+@@ -344,8 +375,10 @@ socket_address::pretty_address_str() const {
+   switch (family()) {
+   case af_inet:
+     return sa_inet()->address_str();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sa_inet6()->pretty_address_str();
++#endif
+   case af_unspec:
+     return std::string("unspec");
+   default:
+@@ -359,12 +392,14 @@ socket_address::set_address_c_str(const char* a) {
+   if (sa_inet()->set_address_c_str(a)) {
+     sa_inet()->set_family();
+     return true;
+-
+-  } else if (sa_inet6()->set_address_c_str(a)) {
++	}
++#ifdef RAK_USE_INET6
++   else if (sa_inet6()->set_address_c_str(a)) {
+     sa_inet6()->set_family();
+     return true;
+-
+-  } else {
++	}
++#endif
++   else {
+     return false;
+   }
+ }
+@@ -375,8 +410,10 @@ socket_address::length() const {
+   switch(family()) {
+   case af_inet:
+     return sizeof(sockaddr_in);
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return sizeof(sockaddr_in6);
++#endif
+   default:
+     return 0;
+   }      
+@@ -404,8 +441,10 @@ socket_address::operator == (const socket_address& rhs) const {
+   switch (family()) {
+   case af_inet:
+     return *sa_inet() == *rhs.sa_inet();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return *sa_inet6() == *rhs.sa_inet6();
++#endif
+   default:
+     throw std::logic_error("socket_address::operator == (rhs) invalid type comparison.");
+   }
+@@ -419,8 +458,10 @@ socket_address::operator < (const socket_address& rhs) const {
+   switch (family()) {
+   case af_inet:
+     return *sa_inet() < *rhs.sa_inet();
++#ifdef RAK_USE_INET6
+   case af_inet6:
+     return *sa_inet6() < *rhs.sa_inet6();
++#endif
+   default:
+     throw std::logic_error("socket_address::operator < (rhs) invalid type comparison.");
+   }
+@@ -446,6 +487,7 @@ socket_address_inet::set_address_c_str(const char* a) {
+   return inet_pton(AF_INET, a, &m_sockaddr.sin_addr);
+ }
+ 
++#ifdef RAK_USE_INET6
+ inline socket_address_inet6
+ socket_address_inet::to_mapped_address() const {
+   uint32_t addr32[4];
+@@ -460,6 +502,7 @@ socket_address_inet::to_mapped_address() const {
+   sa.set_port_n(m_sockaddr.sin_port);
+   return sa;
+ }
++#endif
+ 
+ inline bool
+ socket_address_inet::operator == (const socket_address_inet& rhs) const {
+@@ -476,6 +519,8 @@ socket_address_inet::operator < (const socket_address_inet& rhs) const {
+      m_sockaddr.sin_port < rhs.m_sockaddr.sin_port);
+ }
+ 
++#ifdef RAK_USE_INET6
++
+ inline std::string
+ socket_address_inet6::address_str() const {
+   char buf[INET6_ADDRSTRLEN];
+@@ -554,6 +599,8 @@ socket_address_inet6::operator < (const socket_address_inet6& rhs) const {
+      m_sockaddr.sin6_port < rhs.m_sockaddr.sin6_port);
+ }
+ 
++#endif
++
+ }
+ 
+ #endif
+diff --git a/src/dht/dht_node.cc b/src/dht/dht_node.cc
+index 0562a2dd..8dee1e9a 100644
+--- a/src/dht/dht_node.cc
++++ b/src/dht/dht_node.cc
+@@ -58,13 +58,15 @@ DhtNode::DhtNode(const HashString& id, const rak::socket_address* sa) :
+   m_recentlyInactive(0),
+   m_bucket(NULL) {
+ 
+-  // TODO: Change this to use the id hash similar to how peer info
+-  // hash'es are logged.
+-  LT_LOG_THIS("created (address:%s)", sa->pretty_address_str().c_str());
+-
+-  // if (sa->family() != rak::socket_address::af_inet &&
+-  //     (sa->family() != rak::socket_address::af_inet6 || !sa->sa_inet6()->is_any()))
+-  //   throw resource_error("Address not af_inet or in6addr_any");
++#ifdef RAK_USE_INET6
++  if (sa->family() != rak::socket_address::af_inet &&
++      (sa->family() != rak::socket_address::af_inet6 ||
++       !sa->sa_inet6()->is_any()))
++    throw resource_error("Addres not af_inet or in6addr_any");
++#else
++  if (sa->family() != rak::socket_address::af_inet)
++    throw resource_error("Address not af_inet");
++#endif
+ }
+ 
+ DhtNode::DhtNode(const std::string& id, const Object& cache) :
+@@ -99,6 +101,7 @@ DhtNode::store_compact(char* buffer) const {
+ 
+ Object*
+ DhtNode::store_cache(Object* container) const {
++#ifdef RAK_USE_INET6
+   if (m_socketAddress.family() == rak::socket_address::af_inet6) {
+     // Currently, all we support is in6addr_any (checked in the constructor),
+     // which is effectively equivalent to this. Note that we need to specify
+@@ -106,8 +109,9 @@ DhtNode::store_cache(Object* container) const {
+     // thus we need an explicit match.
+     container->insert_key("i", int64_t(0));
+     container->insert_key("p", m_socketAddress.sa_inet6()->port());
+-
+-  } else {
++  } else 
++#endif
++  {
+     container->insert_key("i", m_socketAddress.sa_inet()->address_h());
+     container->insert_key("p", m_socketAddress.sa_inet()->port());
+   }
+diff --git a/src/dht/dht_server.cc b/src/dht/dht_server.cc
+index 3bd3654c..6e9d1d37 100644
+--- a/src/dht/dht_server.cc
++++ b/src/dht/dht_server.cc
+@@ -148,10 +148,10 @@ DhtServer::start(int port) {
+       throw resource_error("Could not set listening port to reuse address.");
+ 
+     rak::socket_address sa = *m_router->address();
+-
++#ifdef RAK_USE_INET6
+     if (sa.family() == rak::socket_address::af_unspec)
+       sa.sa_inet6()->clear();
+-
++#endif
+     sa.set_port(port);
+ 
+     LT_LOG_THIS("starting (address:%s)", sa.pretty_address_str().c_str());
+@@ -728,10 +728,12 @@ DhtServer::event_read() {
+       if (read < 0)
+         break;
+ 
++#ifdef RAK_USE_INET6
+       // We can currently only process mapped-IPv4 addresses, not real IPv6.
+       // Translate them to an af_inet socket_address.
+       if (sa.family() == rak::socket_address::af_inet6)
+         sa = sa.sa_inet6()->normalize_address();
++#endif
+ 
+       if (sa.family() != rak::socket_address::af_inet)
+         continue;
+diff --git a/src/net/address_list.cc b/src/net/address_list.cc
+index 66b97c16..ea0f4891 100644
+--- a/src/net/address_list.cc
++++ b/src/net/address_list.cc
+@@ -77,6 +77,7 @@ AddressList::parse_address_compact(raw_string s) {
+ 	    std::back_inserter(*this));
+ }
+ 
++#ifdef RAK_USE_INET6
+ void
+ AddressList::parse_address_compact_ipv6(const std::string& s) {
+   if (sizeof(const SocketAddressCompact6) != 18)
+@@ -86,6 +87,7 @@ AddressList::parse_address_compact_ipv6(const std::string& s) {
+             reinterpret_cast<const SocketAddressCompact6*>(s.c_str() + s.size() - s.size() % sizeof(SocketAddressCompact6)),
+             std::back_inserter(*this));
+ }
++#endif
+ 
+ void
+ AddressList::parse_address_bencode(raw_list s) {
+diff --git a/src/net/address_list.h b/src/net/address_list.h
+index d40efd93..07db551a 100644
+--- a/src/net/address_list.h
++++ b/src/net/address_list.h
+@@ -54,7 +54,9 @@ public:
+ 
+   void                        parse_address_compact(raw_string s);
+   void                        parse_address_compact(const std::string& s);
++#ifdef RAK_USE_INET6
+   void                        parse_address_compact_ipv6(const std::string& s);
++#endif
+ 
+ private:
+   static rak::socket_address  parse_address(const Object& b);
+@@ -100,6 +102,7 @@ struct SocketAddressCompact {
+   const char*         c_str() const { return reinterpret_cast<const char*>(this); }
+ } __attribute__ ((packed));
+ 
++#ifdef RAK_USE_INET6
+ struct SocketAddressCompact6 {
+   SocketAddressCompact6() {}
+   SocketAddressCompact6(in6_addr a, uint16_t p) : addr(a), port(p) {}
+@@ -119,6 +122,7 @@ struct SocketAddressCompact6 {
+ 
+   const char*         c_str() const { return reinterpret_cast<const char*>(this); }
+ } __attribute__ ((packed));
++#endif
+ 
+ }
+ 
+diff --git a/src/net/listen.cc b/src/net/listen.cc
+index 61fedbf8..3d2d1300 100644
+--- a/src/net/listen.cc
++++ b/src/net/listen.cc
+@@ -39,9 +39,11 @@ Listen::open(uint16_t first, uint16_t last, int backlog, const rak::socket_addre
+ 
+   // TODO: Temporary until we refactor:
+   if (bindAddress->family() == 0) {
++#ifdef RAK_USE_INET6
+     if (m_ipv6_socket)
+       sa.sa_inet6()->clear();
+     else
++#endif
+       sa.sa_inet()->clear();
+   } else {
+     sa.copy(*bindAddress, bindAddress->length());
+diff --git a/src/net/socket_datagram.cc b/src/net/socket_datagram.cc
+index e7c5e1a5..098b26c5 100644
+--- a/src/net/socket_datagram.cc
++++ b/src/net/socket_datagram.cc
+@@ -73,12 +73,16 @@ SocketDatagram::write_datagram(const void* buffer, unsigned int length, rak::soc
+   int r;
+ 
+   if (sa != NULL) {
++#ifdef RAK_USE_INET6
+     if (m_ipv6_socket && sa->family() == rak::socket_address::pf_inet) {
+       rak::socket_address_inet6 sa_mapped = sa->sa_inet()->to_mapped_address();
+       r = ::sendto(m_fileDesc, buffer, length, 0, sa_mapped.c_sockaddr(), sizeof(rak::socket_address_inet6));
+     } else {
+-      r = ::sendto(m_fileDesc, buffer, length, 0, sa->c_sockaddr(), sa->length());
+-    }
++#endif
++    r = ::sendto(m_fileDesc, buffer, length, 0, sa->c_sockaddr(), sa->length());
++#ifdef RAK_USE_INET6
++	}
++#endif
+   } else {
+     r = ::send(m_fileDesc, buffer, length, 0);
+   }
+diff --git a/src/net/socket_fd.cc b/src/net/socket_fd.cc
+index c36ff4b9..ac698e2a 100644
+--- a/src/net/socket_fd.cc
++++ b/src/net/socket_fd.cc
+@@ -70,10 +70,12 @@ SocketFd::set_priority(priority_type p) {
+   check_valid();
+   int opt = p;
+ 
++#ifdef RAK_USE_INET6
+   if (m_ipv6_socket)
+     return setsockopt(m_fd, IPPROTO_IPV6, IPV6_TCLASS, &opt, sizeof(opt)) == 0;
+   else
+-    return setsockopt(m_fd, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) == 0;
++#endif
++  return setsockopt(m_fd, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) == 0;
+ }
+ 
+ bool
+@@ -83,7 +85,7 @@ SocketFd::set_reuse_address(bool state) {
+ 
+   return setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == 0;
+ }
+-
++#ifdef RAK_USE_INET6
+ bool
+ SocketFd::set_ipv6_v6only(bool state) {
+   check_valid();
+@@ -94,7 +96,7 @@ SocketFd::set_ipv6_v6only(bool state) {
+   int opt = state;
+   return setsockopt(m_fd, IPPROTO_IPV6, IPV6_V6ONLY, &opt, sizeof(opt)) == 0;
+ }
+-
++#endif
+ bool
+ SocketFd::set_send_buffer_size(uint32_t s) {
+   check_valid();
+@@ -126,6 +128,7 @@ SocketFd::get_error() const {
+ 
+ bool
+ SocketFd::open_stream() {
++#ifdef RAK_USE_INET6
+   m_fd = socket(rak::socket_address::pf_inet6, SOCK_STREAM, IPPROTO_TCP);
+ 
+   if (m_fd == -1) {
+@@ -141,10 +144,14 @@ SocketFd::open_stream() {
+   }
+ 
+   return true;
++#else
++  return (m_fd = socket(rak::socket_address::pf_inet, SOCK_STREAM, IPPROTO_TCP)) != -1;
++#endif
+ }
+ 
+ bool
+ SocketFd::open_datagram() {
++#ifdef RAK_USE_INET6
+   m_fd = socket(rak::socket_address::pf_inet6, SOCK_DGRAM, 0);
+ 
+   if (m_fd == -1) {
+@@ -160,6 +167,9 @@ SocketFd::open_datagram() {
+   }
+ 
+   return true;
++#else
++  return (m_fd = socket(rak::socket_address::pf_inet, SOCK_DGRAM, 0)) != -1;
++#endif
+ }
+ 
+ bool
+@@ -190,11 +200,12 @@ bool
+ SocketFd::bind(const rak::socket_address& sa) {
+   check_valid();
+ 
++#ifdef RAK_USE_INET6
+   if (m_ipv6_socket && sa.family() == rak::socket_address::pf_inet) {
+     rak::socket_address_inet6 sa_mapped = sa.sa_inet()->to_mapped_address();
+     return !::bind(m_fd, sa_mapped.c_sockaddr(), sizeof(sa_mapped));
+   }
+-
++#endif
+   return !::bind(m_fd, sa.c_sockaddr(), sa.length());
+ }
+ 
+@@ -202,11 +213,12 @@ bool
+ SocketFd::bind(const rak::socket_address& sa, unsigned int length) {
+   check_valid();
+ 
++#ifdef RAK_USE_INET6
+   if (m_ipv6_socket && sa.family() == rak::socket_address::pf_inet) {
+     rak::socket_address_inet6 sa_mapped = sa.sa_inet()->to_mapped_address();
+     return !::bind(m_fd, sa_mapped.c_sockaddr(), sizeof(sa_mapped));
+   }
+-
++#endif
+   return !::bind(m_fd, sa.c_sockaddr(), length);
+ }
+ 
+@@ -219,11 +231,12 @@ bool
+ SocketFd::connect(const rak::socket_address& sa) {
+   check_valid();
+ 
++#ifdef RAK_USE_INET6
+   if (m_ipv6_socket && sa.family() == rak::socket_address::pf_inet) {
+     rak::socket_address_inet6 sa_mapped = sa.sa_inet()->to_mapped_address();
+     return !::connect(m_fd, sa_mapped.c_sockaddr(), sizeof(sa_mapped)) || errno == EINPROGRESS;
+   }
+-
++#endif
+   return !::connect(m_fd, sa.c_sockaddr(), sa.length()) || errno == EINPROGRESS;
+ }
+ 
+@@ -241,9 +254,11 @@ SocketFd::getsockname(rak::socket_address *sa) {
+     return false;
+   }
+ 
++#ifdef RAK_USE_INET6
+   if (m_ipv6_socket && sa->family() == rak::socket_address::af_inet6) {
+     *sa = sa->sa_inet6()->normalize_address();
+   }
++#endif
+ 
+   return true;
+ }
+@@ -260,8 +275,9 @@ SocketFd::accept(rak::socket_address* sa) {
+   check_valid();
+   socklen_t len = sizeof(rak::socket_address);
+ 
++#ifdef RAK_USE_INET6
+   if (sa == NULL) {
+-    return SocketFd(::accept(m_fd, NULL, &len), m_ipv6_socket);
++    return SocketFd(::accept(m_fd, NULL, &len));
+   }
+ 
+   int fd = ::accept(m_fd, sa->c_sockaddr(), &len);
+@@ -270,7 +286,10 @@ SocketFd::accept(rak::socket_address* sa) {
+     *sa = sa->sa_inet6()->normalize_address();
+   }
+ 
+-  return SocketFd(fd, m_ipv6_socket);
++  return SocketFd(fd);
++#else
++  return SocketFd(::accept(m_fd, sa != NULL ? sa->c_sockaddr() : NULL, &len));
++#endif
+ }
+ 
+ // unsigned int
+diff --git a/src/net/socket_fd.h b/src/net/socket_fd.h
+index 4db0087b..68d0521e 100644
+--- a/src/net/socket_fd.h
++++ b/src/net/socket_fd.h
+@@ -53,7 +53,6 @@ public:
+ 
+   SocketFd() : m_fd(-1) {}
+   explicit SocketFd(int fd) : m_fd(fd) {}
+-  SocketFd(int fd, bool ipv6_socket) : m_fd(fd), m_ipv6_socket(ipv6_socket) {}
+ 
+   bool                is_valid() const                        { return m_fd >= 0; }
+   
+@@ -62,8 +61,9 @@ public:
+ 
+   bool                set_nonblock();
+   bool                set_reuse_address(bool state);
++#ifdef RAK_USE_INET6
+   bool                set_ipv6_v6only(bool state);
+-
++#endif
+   bool                set_priority(priority_type p);
+ 
+   bool                set_send_buffer_size(uint32_t s);
+@@ -99,7 +99,9 @@ private:
+   inline void         check_valid() const;
+ 
+   int                 m_fd;
++#ifdef RAK_USE_INET6
+   bool                m_ipv6_socket;
++#endif
+ };
+ 
+ }
+diff --git a/src/torrent/connection_manager.cc b/src/torrent/connection_manager.cc
+index 976ec696..e9c72ee8 100644
+--- a/src/torrent/connection_manager.cc
++++ b/src/torrent/connection_manager.cc
+@@ -55,7 +55,7 @@ ConnectionManager::ConnectionManager() :
+   m_listen(new Listen),
+   m_listen_port(0),
+   m_listen_backlog(SOMAXCONN),
+-
++#ifndef RAK_USE_INET6
+   m_block_ipv4(false),
+   m_block_ipv6(false),
+   m_prefer_ipv6(false) {
+@@ -74,7 +74,7 @@ ConnectionManager::ConnectionManager() :
+                               std::placeholders::_3,
+                               std::placeholders::_4);
+ }
+-
++#endif
+ ConnectionManager::~ConnectionManager() {
+   delete m_listen;
+ 
+@@ -111,8 +111,10 @@ void
+ ConnectionManager::set_bind_address(const sockaddr* sa) {
+   const rak::socket_address* rsa = rak::socket_address::cast_from(sa);
+ 
++#ifndef RAK_USE_INET6
+   if (rsa->family() != rak::socket_address::af_inet)
+     throw input_error("Tried to set a bind address that is not an af_inet address.");
++#endif
+ 
+   rak::socket_address::cast_from(m_bindAddress)->copy(*rsa, rsa->length());
+ }
+@@ -121,8 +123,10 @@ void
+ ConnectionManager::set_local_address(const sockaddr* sa) {
+   const rak::socket_address* rsa = rak::socket_address::cast_from(sa);
+ 
++#ifndef RAK_USE_INET6
+   if (rsa->family() != rak::socket_address::af_inet)
+     throw input_error("Tried to set a local address that is not an af_inet address.");
++#endif
+ 
+   rak::socket_address::cast_from(m_localAddress)->copy(*rsa, rsa->length());
+ }
+@@ -131,8 +135,10 @@ void
+ ConnectionManager::set_proxy_address(const sockaddr* sa) {
+   const rak::socket_address* rsa = rak::socket_address::cast_from(sa);
+ 
++#ifndef RAK_USE_INET6
+   if (rsa->family() != rak::socket_address::af_inet)
+     throw input_error("Tried to set a proxy address that is not an af_inet address.");
++#endif
+ 
+   rak::socket_address::cast_from(m_proxyAddress)->copy(*rsa, rsa->length());
+ }
+@@ -140,8 +146,11 @@ ConnectionManager::set_proxy_address(const sockaddr* sa) {
+ uint32_t
+ ConnectionManager::filter(const sockaddr* sa) {
+   if (!sa_is_any(sa)) {
+-    if ((m_block_ipv4 && sa_is_inet(sa)) ||
+-        (m_block_ipv6 && sa_is_inet6(sa)))
++    if ((m_block_ipv4 && sa_is_inet(sa)) 
++#ifndef RAK_USE_INET6
++       || (m_block_ipv6 && sa_is_inet6(sa))
++#endif
++		)
+       return 0;
+   }
+ 
+diff --git a/src/torrent/event.h b/src/torrent/event.h
+index 73f87e46..377c71ed 100644
+--- a/src/torrent/event.h
++++ b/src/torrent/event.h
+@@ -28,11 +28,15 @@ protected:
+ 
+   int  m_fileDesc;
+ 
+-  // TODO: Deprecate.
++#ifdef RAK_USE_INET6
+   bool m_ipv6_socket;
++#endif
+ };
+-
++#ifdef RAK_USE_INET6
+ inline Event::Event() : m_fileDesc(-1), m_ipv6_socket(false) {}
++#else
++inline Event::Event() : m_fileDesc(-1) {}
++#endif
+ inline Event::~Event() {}
+ inline bool Event::is_open() const { return file_descriptor() != -1; }
+ inline int  Event::file_descriptor() const { return m_fileDesc; }
+diff --git a/src/torrent/peer/peer_list.cc b/src/torrent/peer/peer_list.cc
+index 6ce630f7..aba67af9 100644
+--- a/src/torrent/peer/peer_list.cc
++++ b/src/torrent/peer/peer_list.cc
+@@ -40,15 +40,19 @@ socket_address_less(const sockaddr* s1, const sockaddr* s2) {
+     // humans.
+     return sa1->sa_inet()->address_h() < sa2->sa_inet()->address_h();
+ 
+-  } else if (sa1->family() == rak::socket_address::af_inet6) {
++  }
++#ifdef RAK_USE_INET6
++  else if (sa1->family() == rak::socket_address::af_inet6) {
+     const in6_addr addr1 = sa1->sa_inet6()->address();
+     const in6_addr addr2 = sa2->sa_inet6()->address();
+ 
+     return memcmp(&addr1, &addr2, sizeof(in6_addr)) < 0;
+-
+-  } else {
++  } 
++#endif
++  else {
+     throw internal_error("socket_address_key(...) tried to compare an invalid family type.");
+   }
++
+ }
+ 
+ struct peer_list_equal_port : public std::binary_function<PeerList::reference, uint16_t, bool> {
+diff --git a/src/tracker/tracker_http.cc b/src/tracker/tracker_http.cc
+index 6daf0308..a0cbdd70 100644
+--- a/src/tracker/tracker_http.cc
++++ b/src/tracker/tracker_http.cc
+@@ -103,7 +103,7 @@ TrackerHttp::send_state(int state) {
+     s << "&trackerid=" << rak::copy_escape_html(m_tracker_id);
+ 
+   const rak::socket_address* localAddress = rak::socket_address::cast_from(manager->connection_manager()->local_address());
+-
++#ifdef RAK_USE_INET6
+   if (localAddress->is_address_any()) {
+     if (manager->connection_manager()->is_prefer_ipv6()) {
+       auto ipv6_address = detect_local_sin6_addr();
+@@ -115,6 +115,10 @@ TrackerHttp::send_state(int state) {
+   } else {
+     s << "&ip=" << localAddress->address_str();
+   }
++#else
++  if (!localAddress->is_address_any())
++    s << "&ip=" << localAddress->address_str();
++#endif
+ 
+   if (info->is_compact())
+     s << "&compact=1";
+@@ -307,8 +311,13 @@ TrackerHttp::process_success(const Object& object) {
+ 
+   AddressList l;
+ 
+-  if (!object.has_key("peers") && !object.has_key("peers6"))
++  if (!object.has_key("peers")
++#ifdef RAK_USE_INET6
++      && !object.has_key("peers6")
++#endif
++  ) {
+     return receive_failed("No peers returned");
++  }
+ 
+   if (object.has_key("peers")) {
+     try {
+@@ -325,8 +334,11 @@ TrackerHttp::process_success(const Object& object) {
+     }
+   }
+ 
+-  if (object.has_key_string("peers6"))
++#ifdef RAK_USE_INET6
++  if (object.has_key("peers6")) {
+     l.parse_address_compact_ipv6(object.get_key_string("peers6"));
++  }
++#endif
+ 
+   close_directly();
+   m_slot_success(&l);
+diff --git a/src/tracker/tracker_udp.cc b/src/tracker/tracker_udp.cc
+index 2ce56638..eed11e3a 100644
+--- a/src/tracker/tracker_udp.cc
++++ b/src/tracker/tracker_udp.cc
+@@ -84,17 +84,21 @@ TrackerUdp::parse_udp_url(const std::string& url, hostname_type& hostname, int&
+   if (std::sscanf(m_url.c_str(), "udp://%1023[^:]:%i", hostname.data(), &port) == 2 && hostname[0] != '\0' &&
+       port > 0 && port < (1 << 16))
+     return true;
+-
++#ifdef RAK_USE_INET6
+   if (std::sscanf(m_url.c_str(), "udp://[%1023[^]]]:%i", hostname.data(), &port) == 2 && hostname[0] != '\0' &&
+       port > 0 && port < (1 << 16))
+     return true;
+-
++#endif
+   return false;
+ }
+ 
+ TrackerUdp::resolver_type*
+ TrackerUdp::make_resolver_slot(const hostname_type& hostname) {
++#ifdef RAK_USE_INET6
+   return manager->connection_manager()->resolver()(hostname.data(), PF_UNSPEC, SOCK_DGRAM,
++#else
++  return manager->connection_manager()->resolver()(hostname.data(), PF_INET, SOCK_DGRAM,
++#endif
+                                                    std::bind(&TrackerUdp::start_announce,
+                                                              this,
+                                                              std::placeholders::_1,

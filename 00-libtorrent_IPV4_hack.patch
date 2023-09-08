@@ -1,0 +1,22 @@
+diff --git a/src/net/socket_fd.cc b/src/net/socket_fd.cc
+index c36ff4b9..74b70bad 100644
+--- a/src/net/socket_fd.cc
++++ b/src/net/socket_fd.cc
+@@ -126,7 +126,7 @@ SocketFd::get_error() const {
+ 
+ bool
+ SocketFd::open_stream() {
+-  m_fd = socket(rak::socket_address::pf_inet6, SOCK_STREAM, IPPROTO_TCP);
++  m_fd = -1;
+ 
+   if (m_fd == -1) {
+     m_ipv6_socket = false;
+@@ -145,7 +145,7 @@ SocketFd::open_stream() {
+ 
+ bool
+ SocketFd::open_datagram() {
+-  m_fd = socket(rak::socket_address::pf_inet6, SOCK_DGRAM, 0);
++  m_fd = -1;
+ 
+   if (m_fd == -1) {
+     m_ipv6_socket = false;
