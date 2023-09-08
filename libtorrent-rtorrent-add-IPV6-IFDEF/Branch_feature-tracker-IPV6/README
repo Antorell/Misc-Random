@@ -8,6 +8,7 @@ when it should be using an IPV4 socket to ignore/disallow anything IPV6. IPV4 is
 need an IPV4 mapped to IPV6 to bind an IPV4 addess, rtorrent will surely be long gone. 
 
 https://www.rfc-editor.org/rfc/rfc4038.html
+https://www.rfc-editor.org/rfc/rfc4942#section-2.2
 
 
 
