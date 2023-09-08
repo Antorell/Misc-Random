@@ -4,7 +4,7 @@ files and patch created using rtorrent/libtorrent master/main branch and feature
 
 Fixes IPV6 peers/seeds that try to connect and show up in the list of seed/peers even when "bind_address" is set to lisetn to an IPV4 address.
 On a dual stack machine rtorrent will bind the listening socket using an IPV6 socket with an IPV4 mapped to IPV6 address and still accept IPV6 peers/seeds,
-when it should be using an IPV4 socket to ignore/disallow anything IPV6. IPV4 isn't going anywhere anytime soon, and by the time rtorrent will really 
+when it should be binding the address using an IPV4 socket to ignore/disallow anything IPV6. IPV4 isn't going anywhere anytime soon, and by the time rtorrent will really 
 need an IPV4 mapped to IPV6 to bind an IPV4 addess, rtorrent will surely be long gone. 
 
 https://www.rfc-editor.org/rfc/rfc4038.html
