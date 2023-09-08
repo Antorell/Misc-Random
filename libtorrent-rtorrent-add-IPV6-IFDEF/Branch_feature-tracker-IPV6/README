@@ -7,7 +7,7 @@ On a dual stack machine rtorrent will bind the listening socket using an IPV6 so
 when it should be using an IPV4 socket to ignore/disallow anything IPV6. IPV4 isn't going anywhere anytime soon, and by the time rtorrent will really 
 need an IPV4 mapped to IPV6 to bind to an IPV4 addess, rtorrent will surely be long gone. 
 
-https://www.rfc-editor.org/rfc/rfc4038.html#section-8
+https://www.rfc-editor.org/rfc/rfc4038.html
 
 
 
