@@ -1,3 +1,8 @@
+# Force rtorrent/libtorrent to listen to a IPV4 tcp socket instead of a tcp6 socket
+# with an IPV4 mapped to IPV6 address. 
+# Fixes IPV6 peers/seeds that connect even when "the network.bind_address.set" setting 
+# is set to listen to an IPV4 address. ex: network.bind_address.set=345.346.359
+# revert patch if you need ipv6 at some point. 
 diff --git a/src/net/socket_fd.cc b/src/net/socket_fd.cc
 index c36ff4b9..74b70bad 100644
 --- a/src/net/socket_fd.cc
