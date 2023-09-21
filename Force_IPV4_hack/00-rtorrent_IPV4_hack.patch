@@ -1,3 +1,4 @@
+# For consistency. This one shouldn't be needed.
 diff --git a/src/utils/socket_fd.cc b/src/utils/socket_fd.cc
 index e30594d..94dbafa 100644
 --- a/src/utils/socket_fd.cc

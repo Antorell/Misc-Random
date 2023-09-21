@@ -1,0 +1,10 @@
+00-libtorrent_Force_IPV4_hack
+Force rtorrent/libtorrent to listen to a IPV4 tcp socket instead of a tcp6 socket
+with an IPV4 mapped to IPV6 address. 
+Fixes IPV6 peers/seeds that connect even when the "network.bind_address.set" setting 
+is set to listen to an IPV4 address. ex: network.bind_address.set=345.346.359.356
+
+
+revert if you need ipv6 at some point. 
+
+00-rtorrent_IPV4_hack is here for consistency and shouldn't be needed. 
