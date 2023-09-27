@@ -1,24 +1,23 @@
- CMakeLists.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+# Default ON, Release build only
+# Add -DENABLE_MARCH_MTUNE_NATIVE=OFF to cmake to turn off
+#
+ CMakeLists.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index cd4cb5a16..b97df6e0b 100644
+index cd4cb5a16..8a8b97dbf 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -22,6 +22,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
- include(FeatureSummary)
- include(FeatureOptionsSetup)
+@@ -20,7 +20,12 @@ include(GNUInstallDirs)
  
+ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+ include(FeatureSummary)
++
+ include(FeatureOptionsSetup)
 +option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
-+if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_BUILD_TYPE STREQUAL "Release")
++if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
 +  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
 +endif()
-+
+ 
  # features, list is loosely sorted by user's interests
  feature_option(GUI "Build GUI application" ON)
- feature_option(WEBUI "Enable built-in HTTP server for remote control" ON)
-@@ -63,3 +68,4 @@ add_subdirectory(dist)
- if (TESTING)
-     add_subdirectory(test)
- endif()
-+
