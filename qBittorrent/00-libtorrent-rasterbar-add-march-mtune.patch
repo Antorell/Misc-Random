@@ -1,3 +1,6 @@
+# Default ON, Release build only
+# Add -DENABLE_MARCH_MTUNE_NATIVE=OFF to cmake to turn off
+# 
  CMakeLists.txt          | 8 ++++++++
  simulation/libsimulator | 2 +-
  2 files changed, 9 insertions(+), 1 deletion(-)
