@@ -1,22 +1,19 @@
-# Default ON, Release build only
-# Add -DENABLE_MARCH_MTUNE_NATIVE=OFF to cmake to turn off
-#
- CMakeLists.txt | 5 +++++
- 1 file changed, 5 insertions(+)
+ cmake/Modules/CommonConfig.cmake | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index cd4cb5a16..7efee45bc 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -22,6 +22,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
- include(FeatureSummary)
- include(FeatureOptionsSetup)
- 
+diff --git a/cmake/Modules/CommonConfig.cmake b/cmake/Modules/CommonConfig.cmake
+index 8e7a4c074..03bc1cbf7 100644
+--- a/cmake/Modules/CommonConfig.cmake
++++ b/cmake/Modules/CommonConfig.cmake
+@@ -104,3 +104,11 @@ endif()
+ if (LibtorrentRasterbar_VERSION VERSION_GREATER_EQUAL ${minLibtorrentVersion})
+     target_compile_definitions(qbt_common_cfg INTERFACE QBT_USES_LIBTORRENT2)
+ endif()
++
 +option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
 +if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
-+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
++	add_compile_options(
++	    -march=native
++	    -mtune=native
++	)
 +endif()
-+
- # features, list is loosely sorted by user's interests
- feature_option(GUI "Build GUI application" ON)
- feature_option(WEBUI "Enable built-in HTTP server for remote control" ON)
