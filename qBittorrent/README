@@ -1,0 +1,2 @@
+Default ON, Release build only
+Add -DENABLE_MARCH_MTUNE_NATIVE=OFF to cmake to turn off
