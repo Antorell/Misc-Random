@@ -1,6 +1,3 @@
-# Default ON, Release build only
-# Add -DENABLE_MARCH_MTUNE_NATIVE=OFF to cmake to turn off
-# 
  CMakeLists.txt          | 8 ++++++++
  simulation/libsimulator | 2 +-
  2 files changed, 9 insertions(+), 1 deletion(-)
@@ -24,10 +21,4 @@ index 382b22c3b..3146c1775 100644
  if(static_runtime)
  	if (MSVC)
  		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-diff --git a/simulation/libsimulator b/simulation/libsimulator
-index da549dbfb..66ac6cc0b 160000
---- a/simulation/libsimulator
-+++ b/simulation/libsimulator
-@@ -1 +1 @@
--Subproject commit da549dbfb655e50b4d200ff91913b42794787cb4
-+Subproject commit 66ac6cc0b248e4655b8d21004fd24e3b62b5908d
+
