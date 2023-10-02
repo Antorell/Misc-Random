@@ -1,0 +1,19 @@
+ cmake/Modules/CommonConfig.cmake | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/cmake/Modules/CommonConfig.cmake b/cmake/Modules/CommonConfig.cmake
+index 8e7a4c074..03bc1cbf7 100644
+--- a/cmake/Modules/CommonConfig.cmake
++++ b/cmake/Modules/CommonConfig.cmake
+@@ -104,3 +104,11 @@ endif()
+ if (LibtorrentRasterbar_VERSION VERSION_GREATER_EQUAL ${minLibtorrentVersion})
+     target_compile_definitions(qbt_common_cfg INTERFACE QBT_USES_LIBTORRENT2)
+ endif()
++
++option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
++if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
++	add_compile_options(
++	    -march=native
++	    -mtune=native
++	)
++endif()
