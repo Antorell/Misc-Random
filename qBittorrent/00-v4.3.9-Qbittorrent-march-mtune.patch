@@ -1,0 +1,21 @@
+ cmake/Modules/MacroQbtCommonConfig.cmake | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/cmake/Modules/MacroQbtCommonConfig.cmake b/cmake/Modules/MacroQbtCommonConfig.cmake
+index 0b31ffefa..39798cd7e 100644
+--- a/cmake/Modules/MacroQbtCommonConfig.cmake
++++ b/cmake/Modules/MacroQbtCommonConfig.cmake
+@@ -58,6 +58,13 @@ macro(qbt_common_config)
+             target_compile_options(qbt_common_cfg INTERFACE -Wstrict-null-sentinel)
+         endif()
+     endif()
++	option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
++	if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
++		add_compile_options(
++			-march=native
++			-mtune=native
++		)
++	endif()
+ 
+     if ((CXX_COMPILER_ID STREQUAL "Clang") OR (CXX_COMPILER_ID STREQUAL "AppleClang"))
+         target_compile_options(qbt_common_cfg INTERFACE
