@@ -1,0 +1,19 @@
+ cmake/Modules/CommonConfig.cmake | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/Modules/CommonConfig.cmake b/cmake/Modules/CommonConfig.cmake
+index 57072e594..846bae5e3 100644
+--- a/cmake/Modules/CommonConfig.cmake
++++ b/cmake/Modules/CommonConfig.cmake
+@@ -1,7 +1,10 @@
+ # Set platform variables and create some interface-only library targets
+ # that some or all other targets will link to, either directly or transitively,
+ # to consume common compile options/definitions
+-
++option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
++if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
++set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
++endif()
+ # treat value specified by the CXX_STANDARD target property as a requirement by default
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_EXTENSIONS OFF)
