@@ -1,0 +1,25 @@
+# Doesn't add march flag to the linker
+ CMakeLists.txt          | 8 ++++++++
+ simulation/libsimulator | 2 +-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 382b22c3b..3146c1775 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -491,6 +491,14 @@ elseif(MSVC)
+ 	)
+ endif()
+ 
++option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
++if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
++	add_compile_options(
++	    -march=native
++	    -mtune=native
++	)
++endif()
++
+ if(static_runtime)
+ 	if (MSVC)
+ 		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
