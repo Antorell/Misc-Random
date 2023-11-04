@@ -1,15 +1,16 @@
- CMakeLists.txt | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ CMakeLists.txt | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 382b22c3b..754e09354 100644
+index 382b22c3b..c72c1a6c8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -16,7 +16,9 @@ set (SOVERSION "10")
+@@ -16,7 +16,10 @@ set (SOVERSION "10")
  
  include(GNUInstallDirs)
  include(GeneratePkgConfig)
 -
++option(ENABLE_MARCH_MTUNE_NATIVE "Use -march/mtune=native compiler flag." ON)
 +if(ENABLE_MARCH_MTUNE_NATIVE AND CMAKE_CXX_COMPILER_ID MATCHES GNU AND CMAKE_BUILD_TYPE STREQUAL "Release")
 +set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -mtune=native")
 +endif()
