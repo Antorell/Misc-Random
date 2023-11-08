@@ -1,0 +1,16 @@
+ src/http_tracker_connection.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/http_tracker_connection.cpp b/src/http_tracker_connection.cpp
+index de4aa1efb..997fb0897 100644
+--- a/src/http_tracker_connection.cpp
++++ b/src/http_tracker_connection.cpp
+@@ -517,7 +517,7 @@ namespace libtorrent {
+ 
+ 		// if no interval is specified, default to 30 minutes
+ 		resp.interval = seconds32{e.dict_find_int_value("interval", 1800)};
+-		resp.min_interval = seconds32{e.dict_find_int_value("min interval", 30)};
++		resp.min_interval = seconds32(60);
+ 
+ 		bdecode_node const tracker_id = e.dict_find_string("tracker id");
+ 		if (tracker_id)
