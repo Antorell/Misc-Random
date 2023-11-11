@@ -1,20 +1,24 @@
+ src/webui/www/private/index.html            |  1 +
+ src/webui/www/private/scripts/prop-peers.js | 13 ++++++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
 diff --git a/src/webui/www/private/index.html b/src/webui/www/private/index.html
-index 9aa01c063..11875de79 100644
+index 9aa01c063..18a880310 100644
 --- a/src/webui/www/private/index.html
 +++ b/src/webui/www/private/index.html
 @@ -219,6 +219,7 @@
          <li><a href="#addPeer"><img src="images/peers-add.svg" alt="QBT_TR(Add peers...)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Add peers...)QBT_TR[CONTEXT=PeerListWidget]</a></li>
          <li><a href="#copyPeer" id="CopyPeerInfo"><img src="images/edit-copy.svg" alt="QBT_TR(Copy IP:port)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Copy IP:port)QBT_TR[CONTEXT=PeerListWidget]</a></li>
          <li class="separator"><a href="#banPeer"><img src="images/peers-remove.svg" alt="QBT_TR(Ban peer permanently)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Ban peer permanently)QBT_TR[CONTEXT=PeerListWidget]</a></li>
-+        <li class="separator"><a href="#checkPeer"><img src="images/edit-copy.svg" alt="QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]</a></li>
++        <li class="separator"><a href="#checkPeer"><img src="images/help-about.svg" alt="QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]</a></li>
      </ul>
      <ul id="torrentFilesMenu" class="contextMenu">
          <li><a href="#Rename"><img src="images/edit-rename.svg" alt="QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]" /> QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]</a></li>
 diff --git a/src/webui/www/private/scripts/prop-peers.js b/src/webui/www/private/scripts/prop-peers.js
-index be5af9d91..0881bc10a 100644
+index be5af9d91..95447af84 100644
 --- a/src/webui/www/private/scripts/prop-peers.js
 +++ b/src/webui/www/private/scripts/prop-peers.js
-@@ -152,7 +152,17 @@ window.qBittorrent.PropPeers = (function() {
+@@ -152,7 +152,16 @@ window.qBittorrent.PropPeers = (function() {
                          }
                      }).send();
                  }
@@ -26,14 +30,13 @@ index be5af9d91..0881bc10a 100644
 +					return;
 +
 +				if (confirm('QBT_TR(Do you want to check the IP address?)QBT_TR[CONTEXT=PeerListWidget]')) {
-+                    window.open(
-+                        "https://ipinfo.io/" + selectedPeers.toString().split(":")[0], "_blank");
++                    window.open("https://ipinfo.io/" + selectedPeers[0].split(":")[0], "_blank");
 +				}
 +			}
          },
          offsets: {
              x: -15,
-@@ -164,10 +174,12 @@ window.qBittorrent.PropPeers = (function() {
+@@ -164,10 +173,12 @@ window.qBittorrent.PropPeers = (function() {
              if (selectedPeers.length >= 1) {
                  this.showItem('copyPeer');
                  this.showItem('banPeer');
