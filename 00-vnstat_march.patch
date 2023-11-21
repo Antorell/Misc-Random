@@ -1,0 +1,13 @@
+diff --git a/configure b/configure
+index d5c94df..2957a77 100755
+--- a/configure
++++ b/configure
+@@ -4306,7 +4306,7 @@ if test $ac_test_CFLAGS; then
+   CFLAGS=$ac_save_CFLAGS
+ elif test $ac_cv_prog_cc_g = yes; then
+   if test "$GCC" = yes; then
+-    CFLAGS="-g -O2"
++    CFLAGS="-g -O3 -march=native -mtune=native"
+   else
+     CFLAGS="-g"
+   fi

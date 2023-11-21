@@ -10,7 +10,7 @@ index 9aa01c063..18a880310 100644
          <li><a href="#addPeer"><img src="images/peers-add.svg" alt="QBT_TR(Add peers...)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Add peers...)QBT_TR[CONTEXT=PeerListWidget]</a></li>
          <li><a href="#copyPeer" id="CopyPeerInfo"><img src="images/edit-copy.svg" alt="QBT_TR(Copy IP:port)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Copy IP:port)QBT_TR[CONTEXT=PeerListWidget]</a></li>
          <li class="separator"><a href="#banPeer"><img src="images/peers-remove.svg" alt="QBT_TR(Ban peer permanently)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Ban peer permanently)QBT_TR[CONTEXT=PeerListWidget]</a></li>
-+        <li class="separator"><a href="#checkPeer"><img src="images/help-about.svg" alt="QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Check Peer IP info)QBT_TR[CONTEXT=PeerListWidget]</a></li>
++        <li class="separator"><a href="#checkPeer"><img src="images/help-about.svg" alt="QBT_TR(Check peer IP info)QBT_TR[CONTEXT=PeerListWidget]" /> QBT_TR(Check peer IP info)QBT_TR[CONTEXT=PeerListWidget]</a></li>
      </ul>
      <ul id="torrentFilesMenu" class="contextMenu">
          <li><a href="#Rename"><img src="images/edit-rename.svg" alt="QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]" /> QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]</a></li>
