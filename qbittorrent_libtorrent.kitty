@@ -8,6 +8,8 @@
  cd ../libtorrent/
  git reset --hard && git clean -dxf --exclude '*.patch' 2>&1 | tee ../QBT_patch.log
  git pull
+ git submodule init
+ git submodule update
  git apply --verbose --ignore-whitespace  *.patch 2>&1 | tee -a ../QBT_patch.log
  ldconfig -i
  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_MARCH_MTUNE_NATIVE=ON
@@ -23,5 +25,6 @@
  cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DGUI=OFF -DQT6=ON -DENABLE_MARCH_MTUNE_NATIVE=ON
  cmake --build build --verbose --parallel $(nproc)
  cmake --install build
- systemctl start qbittorrent-nox autobrr
  sync && echo 3 > /proc/sys/vm/drop_caches
+ systemctl start qbittorrent-nox autobrr
+
