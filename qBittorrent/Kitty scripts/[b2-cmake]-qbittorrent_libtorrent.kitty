@@ -1,0 +1,31 @@
+ systemctl stop qbittorrent-nox*
+ rm /etc/systemd/system/multi-user.target.wants/qbittorrent-nox@*.service
+ rm -v /usr/local/bin/qbittorrent-nox
+ rm -v /usr/local/lib/libtorrent-rasterbar.*
+ rm -v /usr/local/lib/pkgconfig/libtorrent-rasterbar.*
+ rm -v /usr/local/share/cmake/Modules/FindLibtorrentRasterbar.cmake
+ rm -vrf /usr/local/lib/cmake/
+ rm -vrf /usr/local/include/libtorrent/
+ mkdir -p /usr/sfw/include
+ ldconfig -i
+ sync && echo 3 > /proc/sys/vm/drop_caches
+ cd ../libtorrent/
+ git reset --hard && git clean -dxf --exclude '*.patch' 2>&1 | tee ../QBT_patch.log
+ git pull
+ git submodule init
+ git submodule update
+ git apply --verbose --ignore-whitespace  *.patch 2>&1 | tee -a ../QBT_patch.log
+ b2 -d2 toolset=gcc strip=on crypto=openssl fpic=on variant=release install --install-prefix=/usr/local/ 2>&1 | tee ../LTb2_compile.log
+ ldconfig -i
+ sync && echo 3 > /proc/sys/vm/drop_caches
+ cd ../qBittorrent
+ ls
+ git reset --hard && git clean -dxf --exclude '*.patch' 2>&1 | tee -a ../QBT_patch.log
+ git pull
+ git apply --verbose --ignore-whitespace  *.patch 2>&1 | tee -a ../QBT_patch.log
+ cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DGUI=OFF 2>&1 | tee ../QBT_compile.log
+ cmake --build build --verbose --parallel $(nproc)
+ cmake --install build  --strip
+ sync && echo 3 > /proc/sys/vm/drop_caches
+ systemctl start qbittorrent-nox
+
