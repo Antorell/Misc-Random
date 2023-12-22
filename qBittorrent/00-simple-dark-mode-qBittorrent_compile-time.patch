@@ -1,9 +1,9 @@
 diff --git a/src/webui/www/private/css/qbtDark.css b/src/webui/www/private/css/qbtDark.css
 new file mode 100644
-index 000000000..e8f931242
+index 000000000..0982c5b3e
 --- /dev/null
 +++ b/src/webui/www/private/css/qbtDark.css
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,345 @@
 +body,
 +html {
 +  color-scheme: light dark;
@@ -13,17 +13,27 @@ index 000000000..e8f931242
 +  :root {
 +    --dark-bg-color: #242424;
 +    --dark-hbg-color: #202020;
++    --dark-hover-color: #415a8d;
 +    --dark-fg-color: #2a2a2a;
 +    --dark-hl-color: #c3c3c3;
 +    --dark-divider-color: #ebebeb;
 +    --dark-text-color: #bbb;
 +    --dark-text-over-color: #fff;
 +    --dark-link-color: #52a77b;
-+    --dark-hover-color: #415a8d;
-+    /* --dark-hover-color: #6c98d9; */
 +    --dark-selected-color: #415a8d;
 +    --dark-border-color: #6f6f6f;
-+    --dark-icon-color: #2892fb;
++    /* HSL colors */
++    /* --dark-bg-color: hsl(0deg 0% 14%);
++    --dark-hbg-color: hsl(0deg 0% 13%);
++    --dark-hover-color: hsl(219deg 36% 40%);
++    --dark-fg-color: hsl(0deg 0% 16%);
++    --dark-hl-color: hsl(0deg 0% 76%);
++    --dark-divider-color: hsl(0deg 0% 92%);
++    --dark-text-color: hsl(0deg 0% 73%);
++    --dark-text-over-color: hsl(0deg 0% 100%);
++    --dark-link-color: hsl(149deg 34% 49%);
++    --dark-selected-color: hsl(220deg 37% 40%);
++    --dark-border-color: hsl(0deg 0% 44%); */
 +    --dark-invert-100: invert(100%);
 +    --dark-invert-50: invert(50%);
 +  }
@@ -44,9 +54,13 @@ index 000000000..e8f931242
 +  }
 +
 +  /* Firefox  */
-+  .panel,
-+  .dynamicTableDiv {
-+    scrollbar-width: thin;
++  @-moz-document url-prefix() {
++
++    /* stylelint-disable-next-line  rule-empty-line-before */
++    .panel,
++    .dynamicTableDiv {
++      scrollbar-width: thin;
++    }
 +  }
 +
 +  /* Top Navbar */
@@ -106,10 +120,6 @@ index 000000000..e8f931242
 +    background: var(--dark-bg-color);
 +  }
 +
-+  /* div#Filters_pad.pad,
-+  div#torrentsTableDiv.dynamicTableDiv {
-+    font-size: 13px;
-+  } */
 +  .filterTitle,
 +  .dynamicTable tr > th,
 +  div.dynamicTableFixedHeaderDiv {
@@ -153,6 +163,10 @@ index 000000000..e8f931242
 +
 +  ul.tab-menu > li a {
 +    border-top-right-radius: 25%;
++  }
++
++  tr.logNormal {
++    color: var(--dark-text-color);
 +  }
 +
 +  /* Progress bars  */
@@ -269,7 +283,7 @@ index 000000000..e8f931242
 +  }
 +
 +  div.mocha.isFocused .mochaTitlebar h3,
-+  div h2, tr.logNormal,
++  div h2,
 +  div h3,
 +  div h4 {
 +    color: var(--dark-text-color);
@@ -346,21 +360,20 @@ index 7f7f201bd..529868dcc 100644
  
  a img,
 diff --git a/src/webui/www/public/css/login.css b/src/webui/www/public/css/login.css
-index 61aec4e32..ce3b12558 100644
+index 61aec4e32..351fde6cc 100644
 --- a/src/webui/www/public/css/login.css
 +++ b/src/webui/www/public/css/login.css
-@@ -1,3 +1,5 @@
+@@ -1,3 +1,4 @@
 +@import url("pubqbtdark.css");
-+
  body {
      color: #555;
      font-family: Arial, Helvetica, sans-serif;
 diff --git a/src/webui/www/public/css/pubqbtdark.css b/src/webui/www/public/css/pubqbtdark.css
 new file mode 100644
-index 000000000..af7494795
+index 000000000..d57c8c99d
 --- /dev/null
 +++ b/src/webui/www/public/css/pubqbtdark.css
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,25 @@
 +html,
 +body {
 +    color-scheme: light dark;
@@ -368,8 +381,11 @@ index 000000000..af7494795
 +
 +@media (prefers-color-scheme: dark) {
 +    :root {
-+        --dark-bg-color: #242424;
-+        --dark-text-color: #bbb;
++        /* --dark-bg-color: #242424;
++        --dark-text-color: #bbb; */
++        /* HSL colors */
++        --dark-bg-color: hsl(0deg 0% 14%);
++        --dark-text-color: hsl(0deg 0% 73%);
 +    }
 +
 +    html,
